@@ -3,16 +3,17 @@ yaml_version: 6
 
 project:
   title: "Microgreen BNN Classifier"
-  author: "Athul"
+  author: "Your Name"
   top_module: "tt_um_microgreen_classifier"
   source_files:
     - "project.v"
+  tiles: "1x1"     # <--- THIS WAS THE MISSING LINE
   description: |
     A dedicated Neural Network (BNN) accelerator for precision farming.
     It takes 4 sensor inputs (Height, Greenness, Density, Texture) and 
     classifies the plant state as either 'Growth Phase' or 'Harvest Ready'.
   language: "Verilog"
-  clock_hz: 0 # Clock frequency (0 for combinatorial designs)
+  clock_hz: 0
 
 documentation:
   how_it_works: |
