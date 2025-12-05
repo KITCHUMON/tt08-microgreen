@@ -3,7 +3,7 @@ yaml_version: 6
 
 project:
   title: "Microgreen BNN Classifier"
-  author: "Your Name"
+  author: "Athul"
   top_module: "tt_um_microgreen_classifier"
   source_files:
     - "project.v"
