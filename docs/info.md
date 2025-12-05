@@ -1,20 +1,26 @@
-<!---
-
-This file is used to generate your project datasheet. Please fill in the information below and delete any unused
-sections.
-
-You can also include images in this folder and reference them in the markdown. Each image must be less than
-512 kb in size, and the combined size of all images must be less than 1 MB.
--->
-
 ## How it works
 
-Explain how your project works
+The system uses a pre-trained Binarized Neural Network (BNN) accelerator for precision farming. 
+The weights are trained in Python and baked directly into the Verilog hardware logic. 
+
+1. **Input Processing:** The system accepts 4 binary feature inputs representing Height, Greenness, Density, and Texture.
+2. **Hidden Layer:** These inputs are multiplied by signed weights (1 or -1) and accumulated in 4 hidden neurons. A step function (ReLU equivalent for BNN) activates the neuron if the sum is positive.
+3. **Output Layer:** The hidden neuron outputs are weighted and summed into two output scores: "Growth" and "Harvest".
+4. **Decision:** The system compares the two scores. If the "Harvest" score is higher, the Harvest LED turns on. Otherwise, the Growth LED turns on.
 
 ## How to test
 
-Explain how to use your project
+1. **Reset:** Pulse the `rst_n` pin low for at least one clock cycle to reset the internal registers.
+2. **Set Inputs:** Apply binary signals to the input pins:
+    * `ui[0]`: Height feature
+    * `ui[1]`: Greenness feature
+    * `ui[2]`: Density feature
+    * `ui[3]`: Texture feature
+3. **Observe Outputs:** Check the LEDs:
+    * `uo[0]` (Growth) should light up for "young" plant features (e.g., all inputs 0).
+    * `uo[1]` (Harvest) should light up for "mature" plant features (e.g., all inputs 1).
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
+* No external hardware is required for the logic to function.
+* For a real-world demo, connect 4 simple toggle switches to inputs `ui[0..3]` and LEDs to outputs `uo[0..1]`.
