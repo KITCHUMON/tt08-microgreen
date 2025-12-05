@@ -171,7 +171,7 @@ module tt_um_microgreen_standalone (
     parameter [3:0] W_HO_1 = 4'b0101;
     parameter signed [3:0] BIAS_H0 = 4'sd1;
     parameter signed [3:0] BIAS_H1 = 4'sd1;
-    parameter signed [3:0] BIAS_H2 = 4'sd-1;
+    parameter signed [3:0] BIAS_H2 = 4'sd0;
     parameter signed [3:0] BIAS_H3 = 4'sd0;
     
     // BNN state
