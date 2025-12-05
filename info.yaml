@@ -1,57 +1,62 @@
+# Tiny Tapeout project information
+yaml_version: 6
+
 project:
-  title: "Smart Greenhouse AI System with Environmental Control"
+  title: "Microgreen BNN Classifier"
   author: "Your Name"
+  top_module: "tt_um_microgreen_classifier"
+  source_files:
+    - "project.v"
   description: |
-    Complete precision agriculture system featuring:
-    - BNN classifier for growth stage detection
-    - Real-time optimal parameter monitoring
-    - Automated environmental control
-    - Sensor fault detection
-    - LCD display interface
+    A dedicated Neural Network (BNN) accelerator for precision farming.
+    It takes 4 sensor inputs (Height, Greenness, Density, Texture) and 
+    classifies the plant state as either 'Growth Phase' or 'Harvest Ready'.
   language: "Verilog"
+  clock_hz: 0 # Clock frequency (0 for combinatorial designs)
 
 documentation:
   how_it_works: |
-    The system continuously monitors microgreen growth and environmental
-    parameters. The BNN classifier determines growth stage while the
-    parameter monitor ensures optimal conditions. When parameters drift
-    out of range, control signals are sent to actuators (pump, lights,
-    fan, heater) to maintain ideal growing conditions.
-    
+    The system uses a pre-trained Binarized Neural Network (BNN).
+    The weights are trained in Python and baked into the Verilog hardware.
+    The inputs are weighted, summed, and passed through a step activation function.
+    The final output compares the accumulated scores for 'Growth' vs 'Harvest'
+    and lights up the corresponding LED.
+
   how_to_test: |
-    1. Connect sensors to input pins
-    2. Connect actuators to output pins
-    3. Power on system
-    4. Observe LCD for status
-    5. System will automatically maintain optimal conditions
+    1. Set inputs ui[0] to ui[3] (Feature inputs).
+    2. Reset the chip (rst_n low then high).
+    3. Observe outputs uo[0] (Growth LED) and uo[1] (Harvest LED).
+    4. Example: Set all inputs high -> Harvest LED should turn on.
+
+  external_hw: ""
 
 pinout:
-  # Inputs (from sensors)
-  ui[0]: "Height sensor bit 0"
-  ui[1]: "Height sensor bit 1"
-  ui[2]: "Height sensor bit 2"
-  ui[3]: "Height sensor bit 3"
-  ui[4]: "Color sensor bit 0"
-  ui[5]: "Color sensor bit 1"
-  ui[6]: "Color sensor bit 2"
-  ui[7]: "Color sensor bit 3"
-  
-  # Outputs (to actuators & display)
-  uo[0]: "Growth stage (0=growth, 1=harvest)"
-  uo[1]: "Classification ready"
-  uo[2]: "Sensor fault detected"
-  uo[3]: "All sensors valid"
-  uo[4]: "Temperature out of range"
-  uo[5]: "Humidity out of range"
-  uo[6]: "Light intensity out of range"
-  uo[7]: "Moisture low - needs water"
-  
-  # Bidirectional (actuator control)
-  uio[0]: "Water pump enable"
-  uio[1]: "LED grow light PWM"
-  uio[2]: "Cooling fan enable"
-  uio[3]: "Heater enable"
-  uio[4]: "Confidence indicator"
-  uio[5]: "Harvest alert LED"
-  uio[6]: "System healthy indicator"
-  uio[7]: "Actuator fault"
+  # Inputs (features)
+  ui[0]: "Feature: Height"
+  ui[1]: "Feature: Greenness"
+  ui[2]: "Feature: Density"
+  ui[3]: "Feature: Texture"
+  ui[4]: "Unused"
+  ui[5]: "Unused"
+  ui[6]: "Unused"
+  ui[7]: "Unused"
+
+  # Outputs
+  uo[0]: "LED: Growth Detected"
+  uo[1]: "LED: Harvest Ready"
+  uo[2]: "Unused"
+  uo[3]: "Unused"
+  uo[4]: "Unused"
+  uo[5]: "Unused"
+  uo[6]: "Unused"
+  uo[7]: "Unused"
+
+  # Bidirectional (Unused)
+  uio[0]: "Unused"
+  uio[1]: "Unused"
+  uio[2]: "Unused"
+  uio[3]: "Unused"
+  uio[4]: "Unused"
+  uio[5]: "Unused"
+  uio[6]: "Unused"
+  uio[7]: "Unused"
