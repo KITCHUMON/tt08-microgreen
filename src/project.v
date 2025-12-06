@@ -27,6 +27,7 @@ module tt_um_microgreen_bnn (
 
     reg [3:0] hidden_act;
     reg [2:0] output_class;
+    reg ready_flag;
 
     wire [3:0] input_bin = {binarize(feature_stem), binarize(feature_width), binarize(feature_color), binarize(feature_height)};
 
@@ -65,10 +66,16 @@ module tt_um_microgreen_bnn (
             state <= IDLE;
             hidden_act <= 4'b0000;
             output_class <= 3'b000;
+            ready_flag <= 1'b0;
         end else if (ena) begin
             case (state)
-                IDLE: state <= LOAD_INPUT;
-                LOAD_INPUT: state <= COMPUTE_HIDDEN;
+                IDLE: begin
+                    state <= LOAD_INPUT;
+                    ready_flag <= 1'b0;
+                end
+                LOAD_INPUT: begin
+                    state <= COMPUTE_HIDDEN;
+                end
                 COMPUTE_HIDDEN: begin
                     hidden_act[0] <= (hidden_sum[0] >= 0);
                     hidden_act[1] <= (hidden_sum[1] >= 0);
@@ -78,15 +85,19 @@ module tt_um_microgreen_bnn (
                 end
                 COMPUTE_OUTPUT: begin
                     output_class <= (output_sum[0] >= output_sum[1]) ? 0 : 1;
+                    ready_flag <= 1'b1;
                     state <= DONE;
                 end
-                DONE: state <= IDLE;
+                DONE: begin
+                    state <= IDLE;
+                    ready_flag <= 1'b0;
+                end
             endcase
         end
     end
 
-    assign uo_out[2:0] = (state == DONE) ? output_class : 3'b000;
-    assign uo_out[3] = (state == DONE);
-    assign uo_out[7:4] = (state == DONE) ? hidden_act : 4'b0000;
+    assign uo_out[2:0] = (ready_flag) ? output_class : 3'b000;
+    assign uo_out[3] = ready_flag;
+    assign uo_out[7:4] = (ready_flag) ? hidden_act : 4'b0000;
 
 endmodule
