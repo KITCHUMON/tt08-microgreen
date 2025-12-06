@@ -24,7 +24,9 @@ module tb ();
   wire [7:0] uio_oe;
 
   // Replace tt_um_example with your module name:
-  tt_um_example user_project (
+  // We use 'tt_um_microgreen_classifier' to match your project.v
+  // We added 'user_project' which is the required instance name
+  tt_um_microgreen_classifier user_project (
 
       // Include power ports for the Gate Level test:
 `ifdef GL_TEST
@@ -39,7 +41,7 @@ module tb ();
       .uio_oe (uio_oe),   // IOs: Enable path (active high: 0=input, 1=output)
       .ena    (ena),      // enable - goes high when design is selected
       .clk    (clk),      // clock
-      .rst_n  (rst_n)     // not reset
+      .rst_n  (rst_n)     // reset_n - low to reset
   );
 
 endmodule
