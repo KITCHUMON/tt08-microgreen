@@ -1,64 +1,16 @@
-# TinyTapeout project information
-yaml_version: 6
-
 project:
   title: "AI Microgreen Growth Stage Classifier"
-  author: "Your Name Here"  # ← PUT YOUR NAME
+  author: "Athul"  # ← PUT YOUR NAME
+  discord: "No"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
   description: "Binarized Neural Network for precision agriculture - detects microgreen maturity with 86.7% accuracy"
   language: "Verilog"
   clock_hz: 50000000
   tiles: "1x1"
 
-documentation:
-  author: "Your Name"  # ← PUT YOUR NAME
-  title: "Microgreen BNN Classifier for VLSID 2026"
-  description: |
-    This project implements a Binarized Neural Network (BNN) on TinyTapeout 
-    for real-time microgreen growth stage classification in precision agriculture.
-    
-    Model Performance:
-    - Training accuracy: 89.4%
-    - Test accuracy: 86.7%
-    - Dataset: 123 real images (87 not-ready, 36 ready) + 1000 synthetic samples
-    
-    Architecture:
-    - Input: 4 features (height, color, density, texture)
-    - Hidden: 4 neurons with sign activation
-    - Output: 2 classes (not ready, ready to harvest)
-    - Method: XNOR-popcount for efficient binary operations
-  
-  how_it_works: |
-    The system classifies microgreen growth stages using a compact BNN:
-    
-    1. Sensor inputs (4-bit each) are binarized at threshold of 8
-    2. Hidden layer computes XNOR-popcount with learned weights
-    3. Sign activation function produces binary hidden activations
-    4. Output layer computes final classification scores
-    5. Winner-take-all selects highest scoring class
-    
-    The entire inference completes in 4 clock cycles (~80ns @ 50MHz).
-  
-  how_to_test: |
-    Connect 4-bit sensor values to input pins:
-    - ui_in[3:0]: Height measurement (0-15)
-    - ui_in[7:4]: Color intensity (0-15)
-    - uio_in[3:0]: Density measurement (0-15)
-    - uio_in[7:4]: Texture/temperature (0-15)
-    
-    Read classification from output:
-    - uo_out[0]: Result (0=not ready, 1=ready to harvest)
-    - uo_out[1]: Ready flag (1=new result available)
-    
-    Test vectors:
-    - Low values (3,3,3,3) → Should output 0 (not ready)
-    - High values (15,15,15,15) → Should output 1 (ready)
-  
-  external_hw: |
-    For complete system:
-    - 4x analog sensors (height, color, density, temperature)
-    - External ADC (MCP3008 or similar)
-    - Microcontroller for sensor interfacing (optional)
-    - Display module (LCD or LEDs)
+  top_module:  "tt_um_mitspro"
+
+  source_files:
+    - "project.v"
 
 pinout:
   ui[0]: "Height sensor bit 0"
@@ -69,6 +21,15 @@ pinout:
   ui[5]: "Color sensor bit 1"
   ui[6]: "Color sensor bit 2"
   ui[7]: "Color sensor bit 3"
+
+  uo[0]: "Classification output (0=not ready, 1=ready)"
+  uo[1]: "Ready flag (1=result available)"
+  uo[2]: "Processing done indicator"
+  uo[3]: "Input sanity check"
+  uo[4]: "Hidden neuron 0 state (debug)"
+  uo[5]: "Hidden neuron 1 state (debug)"
+  uo[6]: "Hidden neuron 2 state (debug)"
+  uo[7]: "Hidden neuron 3 state (debug)"
   
   uio[0]: "Density sensor bit 0 (input)"
   uio[1]: "Density sensor bit 1 (input)"
@@ -79,11 +40,5 @@ pinout:
   uio[6]: "Texture sensor bit 2 (input)"
   uio[7]: "Texture sensor bit 3 (input)"
   
-  uo[0]: "Classification output (0=not ready, 1=ready)"
-  uo[1]: "Ready flag (1=result available)"
-  uo[2]: "Processing done indicator"
-  uo[3]: "Input sanity check"
-  uo[4]: "Hidden neuron 0 state (debug)"
-  uo[5]: "Hidden neuron 1 state (debug)"
-  uo[6]: "Hidden neuron 2 state (debug)"
-  uo[7]: "Hidden neuron 3 state (debug)"
+  
+yaml_version: 6
