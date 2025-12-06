@@ -1,35 +1,33 @@
 /*
  * Microgreen Growth Classifier - TinyTapeout tt08
- * 
- * AI-powered growth stage detection for precision farming
- * Training accuracy: 89.4% | Test accuracy: 86.7%
- * 
- * Classes: 0 = Not Ready (Growing), 1 = Ready to Harvest
- * Architecture: 4 inputs → 4 hidden neurons → 2 outputs
+ * * AI-powered growth stage detection for precision farming
+ * Architecture: 4 inputs -> 4 hidden neurons -> 2 outputs
  */
 
-module tt_um_microgreen_classifier (
+`default_nettype none
+
+module tt_um_mitspro (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path
     output wire [7:0] uio_out,  // IOs: Output path
     output wire [7:0] uio_oe,   // IOs: Enable path (bidirectional)
-    input  wire       ena,      // Enable - will go high when design is enabled
-    input  wire       clk,      // Clock - 50MHz
-    input  wire       rst_n     // Reset - active low
+    input  wire       ena,      // Enable
+    input  wire       clk,      // Clock
+    input  wire       rst_n     // Reset
 );
 
-    // Configure all bidirectional pins as outputs
-    assign uio_oe = 8'b11111111;
-    assign uio_out = 8'b00000000;  // Not used in this version
+    // Configure all bidirectional pins as inputs for sensors
+    assign uio_oe = 8'b00000000; 
+    assign uio_out = 8'b00000000;
 
     // ========================================================================
     // INPUT PIN MAPPING
     // ========================================================================
-    // ui_in[3:0] - Height sensor (4 bits, 0-15 scale)
-    // ui_in[7:4] - Color/Greenness sensor (4 bits, 0-15 scale)
-    // uio_in[3:0] - Density sensor (4 bits, 0-15 scale)
-    // uio_in[7:4] - Texture/Temperature sensor (4 bits, 0-15 scale)
+    // ui_in[3:0]   : Height
+    // ui_in[7:4]   : Color
+    // uio_in[3:0]  : Density
+    // uio_in[7:4]  : Texture
     
     wire [3:0] feature_height = ui_in[3:0];
     wire [3:0] feature_color = ui_in[7:4];
@@ -37,26 +35,27 @@ module tt_um_microgreen_classifier (
     wire [3:0] feature_texture = uio_in[7:4];
 
     // ========================================================================
-    // TRAINED WEIGHTS - UPDATE THESE FROM weights.vh
+    // WEIGHTS PARAMETERS
     // ========================================================================
-    // TODO: Open your weights.vh file and copy the parameter values here!
-    // These are PLACEHOLDER values - replace with YOUR trained weights
     
-    // Input to Hidden Layer Weights (4 neurons × 4 inputs)
-    parameter [3:0] W_IH_0 = 4'b1001;  // REPLACE with your W_IH_0
-    parameter [3:0] W_IH_1 = 4'b1011;  // REPLACE with your W_IH_1
-    parameter [3:0] W_IH_2 = 4'b1100;  // REPLACE with your W_IH_2
-    parameter [3:0] W_IH_3 = 4'b1110;  // REPLACE with your W_IH_3
+    // ------------------------------------------------------------------------
+    // DELETE THE LINES BELOW AND PASTE THE CONTENT OF YOUR weights.vh HERE
+    // ------------------------------------------------------------------------
+    parameter [3:0] W_IH_0 = 4'b1001; 
+    parameter [3:0] W_IH_1 = 4'b1011; 
+    parameter [3:0] W_IH_2 = 4'b1100; 
+    parameter [3:0] W_IH_3 = 4'b1110; 
     
-    // Hidden to Output Layer Weights (2 neurons × 4 hidden)
-    parameter [3:0] W_HO_0 = 4'b1010;  // REPLACE with your W_HO_0
-    parameter [3:0] W_HO_1 = 4'b0101;  // REPLACE with your W_HO_1
+    parameter [3:0] W_HO_0 = 4'b1010; 
+    parameter [3:0] W_HO_1 = 4'b0101; 
     
-    // Hidden Layer Biases
-    parameter signed [3:0] BIAS_H0 = 4'sd1;  // REPLACE with your BIAS_H0
-    parameter signed [3:0] BIAS_H1 = 4'sd1;  // REPLACE with your BIAS_H1
-    parameter signed [3:0] BIAS_H2 = -4'sd1;  // REPLACE with your BIAS_H2
-    parameter signed [3:0] BIAS_H3 = 4'sd1;  // REPLACE with your BIAS_H3
+    parameter signed [3:0] BIAS_H0 = 4'sd1; 
+    parameter signed [3:0] BIAS_H1 = 4'sd1; 
+    parameter signed [3:0] BIAS_H2 = -4'sd1; 
+    parameter signed [3:0] BIAS_H3 = 4'sd1; 
+    // ------------------------------------------------------------------------
+    // END OF WEIGHTS SECTION
+    // ------------------------------------------------------------------------
 
     // ========================================================================
     // STATE MACHINE
@@ -68,9 +67,9 @@ module tt_um_microgreen_classifier (
     localparam DONE = 3'd3;
     
     // Registers
-    reg [3:0] hidden_act;      // Hidden layer activations
+    reg [3:0] hidden_act;       // Hidden layer activations
     reg classification;         // Output: 0=not ready, 1=ready
-    reg ready;                 // Result ready flag
+    reg ready;                  // Result ready flag
     
     // ========================================================================
     // XNOR-POPCOUNT FUNCTION (Core BNN Operation)
