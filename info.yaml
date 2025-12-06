@@ -1,66 +1,51 @@
+# TinyTapeout project information
+# Direct Camera-to-ASIC Integration (No MCU!)
+
 project:
-  title: "AI-Powered Microgreen Growth Classifier"
-  author: "Your Name"
-  description: "Binarized Neural Network accelerator for classifying microgreen maturity stages on-chip."
+  title: "Microgreen Harvest Classifier - Camera+BNN"
+  author: "Your Name"                    # CHANGE THIS
+  description: "Direct OV7670 camera to ASIC with on-chip BNN inference for microgreen harvest detection"
+  discord: "your_discord_handle"         # CHANGE THIS (optional)
   language: "Verilog"
-  clock_hz: 50000000  # 50 MHz target clock
+  clock_hz: 25000000                     # 25 MHz for camera interface
 
-  tiles: "1x1"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
+  tiles: "1x1"
 
-  # Your top module name must start with "tt_um_". Make it unique by including your github username:
   top_module:  "tt_um_microgreen_bnn"
 
-  # List your project's source files here.
-  # Source files must be in ./src and you must list each source file separately, one per line.
-  # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
   source_files:
     - "project.v"
 
-
-documentation:
-  author: "Your Name"
-  title: "Microgreen BNN Accelerator"
-  description: |
-    This project implements a Binarized Neural Network (BNN) on silicon to classify microgreen growth stages. It uses XNOR-popcount operations for efficient inference.
-
-  how_it_works: |
-    - Input: 4 features (height, color, width, stem thickness)
-    - Hidden layer: 4 neurons
-    - Output: 3 classes (germination, growth, harvest-ready)
-    - Uses pre-trained weights included in the design.
-
-  how_to_test: |
-    Provide 4-bit inputs for height, color, width, and stem. The design outputs a 3-bit classification and a ready signal.
-
+# Pin definitions
 pinout:
-  # Inputs
-  ui[0]: "feature_height[0]"
-  ui[1]: "feature_height[1]"
-  ui[2]: "feature_height[2]"
-  ui[3]: "feature_height[3]"
-  ui[4]: "feature_color[0]"
-  ui[5]: "feature_color[1]"
-  ui[6]: "feature_color[2]"
-  ui[7]: "feature_color[3]"
+  # Camera data bus (ui_in[7:0])
+  ui[7]: "camera_data[7]"
+  ui[6]: "camera_data[6]"
+  ui[5]: "camera_data[5]"
+  ui[4]: "camera_data[4]"
+  ui[3]: "camera_data[3]"
+  ui[2]: "camera_data[2]"
+  ui[1]: "camera_data[1]"
+  ui[0]: "camera_data[0]"
 
-  # Bidirectional IOs as inputs
-  uio[0]: "feature_width[0]"
-  uio[1]: "feature_width[1]"
-  uio[2]: "feature_width[2]"
-  uio[3]: "feature_width[3]"
-  uio[4]: "feature_stem[0]"
-  uio[5]: "feature_stem[1]"
-  uio[6]: "feature_stem[2]"
-  uio[7]: "feature_stem[3]"
+  # Dedicated outputs (uo_out[7:0])
+  uo[7]: "buzzer"
+  uo[6]: "buzzer"
+  uo[5]: "bnn_ready"
+  uo[4]: "prediction"
+  uo[3]: "hidden_activations[3]"
+  uo[2]: "hidden_activations[2]"
+  uo[1]: "hidden_activations[1]"
+  uo[0]: "hidden_activations[0]"
 
-  # Outputs
-  uo[0]: "output_class[0]"
-  uo[1]: "output_class[1]"
-  uo[2]: "output_class[2]"
-  uo[3]: "ready_flag"
-  uo[4]: "hidden_act[0]"
-  uo[5]: "hidden_act[1]"
-  uo[6]: "hidden_act[2]"
-  uo[7]: "hidden_act[3]"
- 
+  # Bidirectional pins (uio[7:0])
+  uio[7]: "vsync"
+  uio[6]: "href"
+  uio[5]: "pclk"
+  uio[4]: "camera_clk_div"
+  uio[3]: ""
+  uio[2]: ""
+  uio[1]: "ultrasonic_trigger"
+  uio[0]: "echo_pin"
+  
 yaml_version: 6
