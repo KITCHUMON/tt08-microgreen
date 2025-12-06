@@ -7,6 +7,7 @@ project:
   description: "Binarized Neural Network for precision agriculture - detects microgreen maturity with 86.7% accuracy"
   language: "Verilog"
   clock_hz: 50000000
+  tiles: "1x1"
 
 documentation:
   author: "Your Name"  # ← PUT YOUR NAME
