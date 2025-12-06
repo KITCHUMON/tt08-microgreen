@@ -1,47 +1,55 @@
-`default_nettype none
-`timescale 1ns / 1ps
+`timescale 1ns/1ps
 
-/* This testbench just instantiates the module and makes some convenient wires
-   that can be driven / tested by the cocotb test.py.
-*/
-module tb ();
+module tb;
+    reg clk;
+    reg rst_n;
+    reg ena;
+    reg [7:0] ui_in;
+    reg [7:0] uio_in;
+    wire [7:0] uo_out;
+    wire [7:0] uio_out;
+    wire [7:0] uio_oe;
 
-  // Dump the signals to a VCD file. You can view it with gtkwave.
-  initial begin
-    $dumpfile("tb.vcd");
-    $dumpvars(0, tb);
-    #1;
-  end
+    // Instantiate your design
+    tt_um_microgreen_bnn uut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .ena(ena),
+        .ui_in(ui_in),
+        .uio_in(uio_in),
+        .uo_out(uo_out),
+        .uio_out(uio_out),
+        .uio_oe(uio_oe)
+    );
 
-  // Wire up the inputs and outputs:
-  reg clk;
-  reg rst_n;
-  reg ena;
-  reg [7:0] ui_in;
-  reg [7:0] uio_in;
-  wire [7:0] uo_out;
-  wire [7:0] uio_out;
-  wire [7:0] uio_oe;
+    // Clock generation
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;  // 10ns period => 100MHz
+    end
 
-  // Replace tt_um_example with your module name:
-  // We use 'tt_um_microgreen_classifier' to match your project.v
-  // We added 'user_project' which is the required instance name
-  tt_um_microgreen_classifier user_project (
+    // Test sequence
+    initial begin
+        // Initialize inputs
+        rst_n = 0;
+        ena = 0;
+        ui_in = 8'b0;
+        uio_in = 8'b0;
 
-      // Include power ports for the Gate Level test:
-`ifdef GL_TEST
-      .VPWR(1'b1),
-      .VGND(1'b0),
-`endif
+        // Reset the design
+        #20 rst_n = 1;
+        ena = 1;
 
-      .ui_in  (ui_in),    // Dedicated inputs
-      .uo_out (uo_out),   // Dedicated outputs
-      .uio_in (uio_in),   // IOs: Input path
-      .uio_out(uio_out),  // IOs: Output path
-      .uio_oe (uio_oe),   // IOs: Enable path (active high: 0=input, 1=output)
-      .ena    (ena),      // enable - goes high when design is selected
-      .clk    (clk),      // clock
-      .rst_n  (rst_n)     // reset_n - low to reset
-  );
+        // Apply a test vector
+        #10 ui_in = 8'b00110011;
+        #10 uio_in = 8'b00110011;
 
+        // Wait and observe outputs
+        #50;
+
+        // Add more test vectors as needed
+
+        // Finish simulation
+        #100 $finish;
+    end
 endmodule
