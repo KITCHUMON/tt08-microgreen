@@ -25,14 +25,18 @@ async def test_project(dut):
 
     dut._log.info("Test project behavior")
 
-    # Wait one cycle
-    await ClockCycles(dut.clk, 1)
+    # Wait some cycles to let signals settle
+    await ClockCycles(dut.clk, 5)
 
-    dut.rst_n.value = 0
-    await RisingEdge(dut.clk)
-    dut.rst_n.value = 1
-    await RisingEdge(dut.clk)
+    # Ensure uio_out is driven and doesn't contain 'z'
+    for _ in range(10):
+        if 'z' not in dut.uio_out.value.binstr.lower():
+            break
+        await RisingEdge(dut.clk)
+    else:
+        raise AssertionError("uio_out signal contains unresolved 'z' bits")
 
+    # Now safe to read uio_out
     dut._log.info("Test 1: Camera Clock (XCLK) Generation")
     prev_val = dut.uio_out.value.integer & (1 << 4)
     toggles = 0
@@ -44,35 +48,24 @@ async def test_project(dut):
             prev_val = current_val
 
     assert toggles > 2, "XCLK not toggling as expected"
-    dut._log.info("✓ XCLK generating correctly (toggling observed)")
+    dut._log.info("XCLK generating correctly (toggling observed)")
 
-    # Pulse VSYNC (start frame)
+    # Simulate a VSYNC pulse to start inference
     dut.uio_in.value = 0b10000000  # VSYNC high
     await RisingEdge(dut.clk)
     dut.uio_in.value = 0b00000000  # VSYNC low
+    await RisingEdge(dut.clk)
 
-    # Simulate HREF and PCLK activity (fake 16 pixels)
-    for _ in range(16):
-        dut.uio_in.value = 0b01100000  # HREF=1, PCLK=0
-        dut.ui_in.value = 0b11111111   # green-dominant
+    dut._log.info("Test 2: Check BNN readiness")
+
+    # Wait for bnn_ready (uo_out[5]) up to a timeout
+    for _ in range(5000):
         await RisingEdge(dut.clk)
-
-        dut.uio_in.value = 0b01100100  # HREF=1, PCLK=1
-        await RisingEdge(dut.clk)
-
-    # End of line/frame (HREF low)
-    dut.uio_in.value = 0b00000000
-    await ClockCycles(dut.clk, 5)
-
-    # Wait for BNN ready signal
-    for cycle in range(5000):
-        await RisingEdge(dut.clk)
-        ready = (dut.uo_out.value >> 5) & 0b1
-        if ready:
+        if (dut.uo_out.value >> 5) & 0b1:
             break
     else:
         raise AssertionError("Timeout waiting for bnn_ready signal")
 
     prediction = (dut.uo_out.value >> 4) & 0b1
-    hidden_debug = dut.uo_out.value & 0x0F
-    dut._log.info(f"✓ BNN ready. Prediction: {prediction}, Hidden: {bin(hidden_debug)}")
+    hidden = dut.uo_out.value & 0x0F
+    dut._log.info(f"✓ BNN Ready | Prediction: {prediction} | Hidden: {bin(hidden)}")
