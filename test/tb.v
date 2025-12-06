@@ -19,7 +19,7 @@ module tb ();
     wire [7:0] uo_out;
     wire [7:0] uio_out;
     wire [7:0] uio_oe;
-    
+    reg ena;
     // Instantiate DUT
     tt_um_microgreen_bnn user_project (
 `ifdef GL_TEST
