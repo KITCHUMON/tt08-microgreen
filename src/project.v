@@ -39,7 +39,7 @@ module tt_um_microgreen_bnn (
     wire [7:0] camera_data = ui_in;
     wire vsync = uio_in[7];  // Frame start
     wire href = uio_in[6];   // Line valid
-    wire pclk = uio_in[5];   // Pixel clock
+    wire pclk = uio_in[5];   // Pixel clock (from camera)
     
     // Feature accumulators for real-time processing
     reg [15:0] green_accumulator;
@@ -55,16 +55,32 @@ module tt_um_microgreen_bnn (
     reg [7:0] avg_brightness;
     reg [7:0] height_pixels;
     
-    // Process incoming pixels on PCLK
-    reg vsync_prev, href_prev;
-    wire vsync_rising = vsync && !vsync_prev;
-    wire vsync_falling = !vsync && vsync_prev;
-    wire href_active = href && !href_prev;
+    // Synchronize VSYNC to system clock for reliable edge detection
+    reg vsync_sync1, vsync_sync2, vsync_sync3;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            vsync_sync1 <= 0;
+            vsync_sync2 <= 0;
+            vsync_sync3 <= 0;
+        end else if (ena) begin
+            vsync_sync1 <= vsync;
+            vsync_sync2 <= vsync_sync1;
+            vsync_sync3 <= vsync_sync2;
+        end
+    end
+    
+    wire vsync_rising = vsync_sync2 && !vsync_sync3;
+    wire vsync_falling = !vsync_sync2 && vsync_sync3;
+    
+    // Process incoming pixels on PCLK (if available) or system clock
+    reg vsync_prev_pclk, href_prev;
+    wire pclk_active = pclk;  // Use pclk when available
+    wire process_clk = pclk_active ? pclk : clk;  // Fallback to clk for testing
     
     reg [8:0] row_counter;
     reg [9:0] col_counter;
     
-    always @(posedge pclk or negedge rst_n) begin
+    always @(posedge process_clk or negedge rst_n) begin
         if (!rst_n) begin
             green_accumulator <= 0;
             red_accumulator <= 0;
@@ -74,15 +90,18 @@ module tt_um_microgreen_bnn (
             col_counter <= 0;
             max_row <= 0;
             min_row <= 255;
-            frame_ready <= 0;
-            vsync_prev <= 0;
+            vsync_prev_pclk <= 0;
             href_prev <= 0;
         end else if (ena) begin
-            vsync_prev <= vsync;
+            vsync_prev_pclk <= vsync;
             href_prev <= href;
             
+            wire vsync_rising_pclk = vsync && !vsync_prev_pclk;
+            wire vsync_falling_pclk = !vsync && vsync_prev_pclk;
+            wire href_active = href && !href_prev;
+            
             // Start of new frame
-            if (vsync_rising) begin
+            if (vsync_rising_pclk) begin
                 green_accumulator <= 0;
                 red_accumulator <= 0;
                 brightness_accumulator <= 0;
@@ -90,7 +109,6 @@ module tt_um_microgreen_bnn (
                 max_row <= 0;
                 min_row <= 255;
                 row_counter <= 0;
-                frame_ready <= 0;
             end
             
             // New line
@@ -122,16 +140,29 @@ module tt_um_microgreen_bnn (
                 end
             end
             
-            // End of frame
-            if (vsync_falling) begin
+            // End of frame - compute features
+            if (vsync_falling_pclk) begin
                 if (pixel_count > 0) begin
                     avg_green <= green_accumulator[15:8];
                     avg_red <= red_accumulator[15:8];
                     avg_brightness <= brightness_accumulator[15:8];
                     height_pixels <= max_row - min_row;
-                    frame_ready <= 1;
                 end
             end
+        end
+    end
+    
+    // Frame ready signal generation (in system clock domain)
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            frame_ready <= 0;
+        else if (ena) begin
+            // Set frame_ready on VSYNC falling edge
+            if (vsync_falling)
+                frame_ready <= 1;
+            // Clear after inference trigger
+            else if (frame_ready)
+                frame_ready <= 0;
         end
     end
     
