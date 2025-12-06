@@ -1,44 +1,54 @@
 project:
-  title: "AI Microgreen Growth Stage Classifier"
-  author: "Athul"  # ← PUT YOUR NAME
-  discord: "No"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  description: "Binarized Neural Network for precision agriculture - detects microgreen maturity with 86.7% accuracy"
+  title: "AI-Powered Microgreen Growth Classifier"
+  author: "Your Name"
+  description: "Binarized Neural Network accelerator for classifying microgreen maturity stages on-chip."
   language: "Verilog"
-  clock_hz: 50000000
-  tiles: "1x1"
+  clock_hz: 50000000  # 50 MHz target clock
 
-  top_module:  "tt_um_microgreen_classifier"
+documentation:
+  author: "Your Name"
+  title: "Microgreen BNN Accelerator"
+  description: |
+    This project implements a Binarized Neural Network (BNN) on silicon to classify microgreen growth stages. It uses XNOR-popcount operations for efficient inference.
 
-  source_files:
-    - "project.v"
+  how_it_works: |
+    - Input: 4 features (height, color, width, stem thickness)
+    - Hidden layer: 4 neurons
+    - Output: 3 classes (germination, growth, harvest-ready)
+    - Uses pre-trained weights included in the design.
+
+  how_to_test: |
+    Provide 4-bit inputs for height, color, width, and stem. The design outputs a 3-bit classification and a ready signal.
 
 pinout:
-  ui[0]: "Height sensor bit 0"
-  ui[1]: "Height sensor bit 1"
-  ui[2]: "Height sensor bit 2"
-  ui[3]: "Height sensor bit 3"
-  ui[4]: "Color sensor bit 0"
-  ui[5]: "Color sensor bit 1"
-  ui[6]: "Color sensor bit 2"
-  ui[7]: "Color sensor bit 3"
+  # Inputs
+  ui[0]: "Height measurement bit 0"
+  ui[1]: "Height measurement bit 1"
+  ui[2]: "Height measurement bit 2"
+  ui[3]: "Height measurement bit 3"
+  ui[4]: "Color intensity bit 0"
+  ui[5]: "Color intensity bit 1"
+  ui[6]: "Color intensity bit 2"
+  ui[7]: "Color intensity bit 3"
 
-  uo[0]: "Classification output (0=not ready, 1=ready)"
-  uo[1]: "Ready flag (1=result available)"
-  uo[2]: "Processing done indicator"
-  uo[3]: "Input sanity check"
-  uo[4]: "Hidden neuron 0 state (debug)"
-  uo[5]: "Hidden neuron 1 state (debug)"
-  uo[6]: "Hidden neuron 2 state (debug)"
-  uo[7]: "Hidden neuron 3 state (debug)"
-  
-  uio[0]: "Density sensor bit 0 (input)"
-  uio[1]: "Density sensor bit 1 (input)"
-  uio[2]: "Density sensor bit 2 (input)"
-  uio[3]: "Density sensor bit 3 (input)"
-  uio[4]: "Texture sensor bit 0 (input)"
-  uio[5]: "Texture sensor bit 1 (input)"
-  uio[6]: "Texture sensor bit 2 (input)"
-  uio[7]: "Texture sensor bit 3 (input)"
-  
-  
+  # Bidirectional IOs as inputs
+  uio[0]: "Width measurement bit 0"
+  uio[1]: "Width measurement bit 1"
+  uio[2]: "Width measurement bit 2"
+  uio[3]: "Width measurement bit 3"
+  uio[4]: "Stem thickness bit 0"
+  uio[5]: "Stem thickness bit 1"
+  uio[6]: "Stem thickness bit 2"
+  uio[7]: "Stem thickness bit 3"
+
+  # Outputs
+  uo[0]: "Classification result bit 0"
+  uo[1]: "Classification result bit 1"
+  uo[2]: "Classification result bit 2"
+  uo[3]: "Ready signal"
+  uo[4]: "Hidden neuron 0 activation (debug)"
+  uo[5]: "Hidden neuron 1 activation (debug)"
+  uo[6]: "Hidden neuron 2 activation (debug)"
+  uo[7]: "Hidden neuron 3 activation (debug)"
+ 
 yaml_version: 6
