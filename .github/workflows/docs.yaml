@@ -13,5 +13,10 @@ jobs:
         with:
           submodules: recursive
 
+      # --- CORRECTED: Install Typst FIRST ---
+      - name: Setup Typst
+        uses: typst-community/setup-typst@v4
+      # ------------------------------------
+
       - name: Build docs
         uses: TinyTapeout/tt-gds-action/docs@tt08
