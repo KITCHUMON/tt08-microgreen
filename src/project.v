@@ -85,8 +85,8 @@ module tt_um_microgreen_bnn (
         end
     end
 
-    assign uo_out[2:0] = output_class;
+    assign uo_out[2:0] = (state == DONE) ? output_class : 3'b000;
     assign uo_out[3] = (state == DONE);
-    assign uo_out[7:4] = hidden_act;
+    assign uo_out[7:4] = (state == DONE) ? hidden_act : 4'b0000;
 
 endmodule
