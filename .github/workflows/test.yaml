@@ -29,13 +29,13 @@ jobs:
           make clean
           make
           # make will return success even if the test fails, so check for failure in the results.xml
-          ! grep failure results.xml
+          if [ -f results.xml ]; then ! grep failure results.xml; else echo "No results.xml found"; fi
 
       - name: Test Summary
+        if: always() && hashFiles('test/results.xml') != ''
         uses: test-summary/action@v2.3
         with:
           paths: "test/results.xml"
-        if: always()
 
       - name: upload vcd
         if: success() || failure()
