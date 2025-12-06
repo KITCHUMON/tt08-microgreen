@@ -276,9 +276,9 @@ module tt_um_microgreen_bnn (
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             bnn_state <= BNN_IDLE;
-            hidden_activations <= 4'b0;
-            output_activations <= 2'b0;
-            bnn_ready <= 1'b0;
+            hidden_activations <= 4'b0000;
+            output_activations <= 2'b00;
+            bnn_ready <= 1'b1;  // Start ready so outputs are valid
         end else if (ena) begin
             case (bnn_state)
                 BNN_IDLE: begin
