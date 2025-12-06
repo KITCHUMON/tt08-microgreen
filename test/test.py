@@ -3,8 +3,7 @@
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles
-from cocotb.triggers import RisingEdge
+from cocotb.triggers import ClockCycles, RisingEdge
 
 
 @cocotb.test()
@@ -26,7 +25,7 @@ async def test_project(dut):
 
     dut._log.info("Test project behavior")
 
-    # Wait for one clock cycle to see the output values
+    # Wait one cycle
     await ClockCycles(dut.clk, 1)
 
     dut.rst_n.value = 0
@@ -47,37 +46,33 @@ async def test_project(dut):
     assert toggles > 2, "XCLK not toggling as expected"
     dut._log.info("✓ XCLK generating correctly (toggling observed)")
 
-   # Pulse VSYNC (start frame)
-dut.uio_in.value = 0b10000000  # VSYNC high
-await RisingEdge(dut.clk)
-dut.uio_in.value = 0b00000000  # VSYNC low
-
-# Simulate HREF and PCLK activity (fake 16 pixels)
-for _ in range(16):
-    # Set HREF and some camera data (e.g., green pixels)
-    dut.uio_in.value = 0b01100000  # HREF=1, PCLK=0
-    dut.ui_in.value = 0b11111111  # Green-dominant pixel
+    # Pulse VSYNC (start frame)
+    dut.uio_in.value = 0b10000000  # VSYNC high
     await RisingEdge(dut.clk)
+    dut.uio_in.value = 0b00000000  # VSYNC low
 
-    dut.uio_in.value = 0b01100100  # HREF=1, PCLK=1
-    await RisingEdge(dut.clk)
+    # Simulate HREF and PCLK activity (fake 16 pixels)
+    for _ in range(16):
+        dut.uio_in.value = 0b01100000  # HREF=1, PCLK=0
+        dut.ui_in.value = 0b11111111   # green-dominant
+        await RisingEdge(dut.clk)
 
-# End of line/frame (HREF low)
-dut.uio_in.value = 0b00000000
-await ClockCycles(dut.clk, 5)
+        dut.uio_in.value = 0b01100100  # HREF=1, PCLK=1
+        await RisingEdge(dut.clk)
 
-# Now wait for bnn_ready
-for cycle in range(5000):
-    await RisingEdge(dut.clk)
-    ready = (dut.uo_out.value >> 5) & 0b1
-    if ready:
-        break
-else:
-    raise AssertionError("Timeout waiting for bnn_ready signal")
+    # End of line/frame (HREF low)
+    dut.uio_in.value = 0b00000000
+    await ClockCycles(dut.clk, 5)
 
-prediction = (dut.uo_out.value >> 4) & 0b1
-dut._log.info(f"Prediction: {prediction}, Hidden: {bin(dut.uo_out.value & 0x0F)}")
-
+    # Wait for BNN ready signal
+    for cycle in range(5000):
+        await RisingEdge(dut.clk)
+        ready = (dut.uo_out.value >> 5) & 0b1
+        if ready:
+            break
+    else:
+        raise AssertionError("Timeout waiting for bnn_ready signal")
 
     prediction = (dut.uo_out.value >> 4) & 0b1
-    dut._log.info(f"Prediction: {prediction}, Hidden: {bin(dut.uo_out.value & 0x0F)}")
+    hidden_debug = dut.uo_out.value & 0x0F
+    dut._log.info(f"✓ BNN ready. Prediction: {prediction}, Hidden: {bin(hidden_debug)}")
