@@ -10,7 +10,7 @@ module tb;
     wire [7:0] uio_oe;
     
     // Instantiate DUT
-    tt_um_microgreen_bnn dut (
+    tt_um_microgreen_bnn user_project (
         .clk(clk),
         .rst_n(rst_n),
         .ena(ena),
