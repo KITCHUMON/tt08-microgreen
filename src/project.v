@@ -322,7 +322,7 @@ module tt_um_microgreen_bnn (
     // ========================================
     // OUTPUT MAPPING
     // ======================================== 
-    wire buzzer = bnn_ready & prediction;
+    wire buzzer = bnn_ready & prediction & (~vsync);
     assign uo_out[7] = buzzer;
     assign uo_out[6] = buzzer;
     assign uo_out[5] = bnn_ready;                // Ready flag
