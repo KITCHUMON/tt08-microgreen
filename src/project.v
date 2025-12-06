@@ -1,13 +1,15 @@
 `include "weights.vh"
-module tt_um_microgreen_bnn (
+`default_nettype none
+
+module tt_um_example (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path
     output wire [7:0] uio_out,  // IOs: Output path
-    output wire [7:0] uio_oe,   // IOs: Enable path
-    input  wire       ena,      // Enable
-    input  wire       clk,      // Clock
-    input  wire       rst_n     // Reset (active low)
+    output wire [7:0] uio_oe,   // IOs: Enable path (active high: 0=input, 1=output)
+    input  wire       ena,      // always 1 when the design is powered, so you can ignore it
+    input  wire       clk,      // clock
+    input  wire       rst_n     // reset_n - low to reset
 );
     // All outputs enabled
     assign uio_oe = 8'b11111111;
@@ -35,7 +37,7 @@ module tt_um_microgreen_bnn (
     assign hidden_sum[2] = xnor_popcount(input_bin, W_IH_2) + BIAS_H2;
     assign hidden_sum[3] = xnor_popcount(input_bin, W_IH_3) + BIAS_H3;
     
-    wire signed [4:0] output_sum [0:2];
+    wire signed [4:0] output_sum [0:1];
     assign output_sum[0] = xnor_popcount(hidden_act, W_HO_0);
     assign output_sum[1] = xnor_popcount(hidden_act, W_HO_1);
 
@@ -83,16 +85,12 @@ module tt_um_microgreen_bnn (
                     state <= COMPUTE_OUTPUT;
                 end
                 COMPUTE_OUTPUT: begin
-                    // Find argmax of output_sum for 3 classes
-                    if (output_sum[0] >= output_sum[1])
-                        output_class <= 3'd0;
-                    else if (output_sum[1] >= output_sum[0])
-                        output_class <= 3'd1;
-                    else
-                        output_class <= 3'd2;
+                   // Binary classification: pick higher of two outputs
+                    output_class <= (output_sum[0] >= output_sum[1]) ? 3'd0 : 3'd1;
                     ready_flag <= 1'b1;
                     state <= DONE;
                 end
+
                 DONE: begin
                     // Stay in DONE state, keep ready_flag high
                     // Only transition back to IDLE if inputs change (optional)
@@ -105,4 +103,6 @@ module tt_um_microgreen_bnn (
     assign uo_out[2:0] = (ready_flag) ? output_class : 3'b000;
     assign uo_out[3] = ready_flag;
     assign uo_out[7:4] = (ready_flag) ? hidden_act : 4'b0000;
+
+     wire _unused = &{ena};
 endmodule
