@@ -17,6 +17,3 @@ parameter signed [3:0] BIAS_H0 = 4'sd1;
 parameter signed [3:0] BIAS_H1 = 4'sd1;
 parameter signed [3:0] BIAS_H2 = 4'sd-1;
 parameter signed [3:0] BIAS_H3 = 4'sd1;
-
-
-
