@@ -1,63 +1,78 @@
-# Tiny Tapeout project information
-yaml_version: 6
-
 project:
-  title: "Microgreen BNN Classifier"
-  author: "Your Name"
-  top_module: "tt_um_microgreen_classifier"
-  source_files:
-    - "project.v"
-  tiles: "1x1"     # <--- THIS WAS THE MISSING LINE
-  description: |
-    A dedicated Neural Network (BNN) accelerator for precision farming.
-    It takes 4 sensor inputs (Height, Greenness, Density, Texture) and 
-    classifies the plant state as either 'Growth Phase' or 'Harvest Ready'.
+  title: "AI Microgreen Growth Stage Classifier"
+  author: "Your Name Here"  # <-- PUT YOUR NAME
+  description: "Binarized Neural Network for precision agriculture - detects microgreen maturity with 86.7% accuracy"
   language: "Verilog"
-  clock_hz: 0
+  clock_hz: 50000000
 
 documentation:
+  author: "Your Name"  # <-- PUT YOUR NAME
+  title: "Microgreen BNN Classifier for VLSID 2026"
+  description: |
+    This project implements a Binarized Neural Network (BNN) on TinyTapeout 
+    for real-time microgreen growth stage classification in precision agriculture.
+    
+    Model Performance:
+    - Training accuracy: 89.4%
+    - Test accuracy: 86.7%
+    - Dataset: 123 real images + 1000 synthetic samples
+    
+    Architecture:
+    - Input: 4 features (height, color, density, texture)
+    - Hidden: 4 neurons with sign activation
+    - Output: 2 classes (not ready, ready to harvest)
+    - Method: XNOR-popcount for efficient binary operations
+  
   how_it_works: |
-    The system uses a pre-trained Binarized Neural Network (BNN).
-    The weights are trained in Python and baked into the Verilog hardware.
-    The inputs are weighted, summed, and passed through a step activation function.
-    The final output compares the accumulated scores for 'Growth' vs 'Harvest'
-    and lights up the corresponding LED.
-
+    The system classifies microgreen growth stages using a compact BNN:
+    
+    1. Sensor inputs (4-bit each) are binarized at threshold of 8
+    2. Hidden layer computes XNOR-popcount with learned weights
+    3. Sign activation function produces binary hidden activations
+    4. Output layer computes final classification scores
+    5. Winner-take-all selects highest scoring class
+    
+    The entire inference completes in 4 clock cycles (~80ns @ 50MHz).
+  
   how_to_test: |
-    1. Set inputs ui[0] to ui[3] (Feature inputs).
-    2. Reset the chip (rst_n low then high).
-    3. Observe outputs uo[0] (Growth LED) and uo[1] (Harvest LED).
-    4. Example: Set all inputs high -> Harvest LED should turn on.
-
-  external_hw: ""
+    Connect 4-bit sensor values to input pins:
+    - ui_in[3:0]: Height measurement (0-15)
+    - ui_in[7:4]: Color intensity (0-15)
+    - uio_in[3:0]: Density measurement (0-15)
+    - uio_in[7:4]: Texture/temperature (0-15)
+    
+    Read classification from output:
+    - uo_out[0]: Result (0=growing, 1=ready to harvest)
+    - uo_out[1]: Ready flag (1=new result available)
+    
+    Test vectors:
+    - Low values (3,3,3,3) → Should output 0 (not ready)
+    - High values (15,15,15,15) → Should output 1 (ready)
 
 pinout:
-  # Inputs (features)
-  ui[0]: "Feature: Height"
-  ui[1]: "Feature: Greenness"
-  ui[2]: "Feature: Density"
-  ui[3]: "Feature: Texture"
-  ui[4]: "Unused"
-  ui[5]: "Unused"
-  ui[6]: "Unused"
-  ui[7]: "Unused"
-
-  # Outputs
-  uo[0]: "LED: Growth Detected"
-  uo[1]: "LED: Harvest Ready"
-  uo[2]: "Unused"
-  uo[3]: "Unused"
-  uo[4]: "Unused"
-  uo[5]: "Unused"
-  uo[6]: "Unused"
-  uo[7]: "Unused"
-
-  # Bidirectional (Unused)
-  uio[0]: "Unused"
-  uio[1]: "Unused"
-  uio[2]: "Unused"
-  uio[3]: "Unused"
-  uio[4]: "Unused"
-  uio[5]: "Unused"
-  uio[6]: "Unused"
-  uio[7]: "Unused"
+  ui[0]: "Height sensor bit 0"
+  ui[1]: "Height sensor bit 1"
+  ui[2]: "Height sensor bit 2"
+  ui[3]: "Height sensor bit 3"
+  ui[4]: "Color sensor bit 0"
+  ui[5]: "Color sensor bit 1"
+  ui[6]: "Color sensor bit 2"
+  ui[7]: "Color sensor bit 3"
+  
+  uio[0]: "Density sensor bit 0 (input)"
+  uio[1]: "Density sensor bit 1 (input)"
+  uio[2]: "Density sensor bit 2 (input)"
+  uio[3]: "Density sensor bit 3 (input)"
+  uio[4]: "Texture sensor bit 0 (input)"
+  uio[5]: "Texture sensor bit 1 (input)"
+  uio[6]: "Texture sensor bit 2 (input)"
+  uio[7]: "Texture sensor bit 3 (input)"
+  
+  uo[0]: "Classification output (0=not ready, 1=ready)"
+  uo[1]: "Ready flag (1=result available)"
+  uo[2]: "Processing done indicator"
+  uo[3]: "Input sanity check"
+  uo[4]: "Hidden neuron 0 state (debug)"
+  uo[5]: "Hidden neuron 1 state (debug)"
+  uo[6]: "Hidden neuron 2 state (debug)"
+  uo[7]: "Hidden neuron 3 state (debug)"
