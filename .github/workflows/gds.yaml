@@ -13,6 +13,11 @@ jobs:
         with:
           submodules: recursive
 
+      # --- ADDED THIS STEP ---
+      - name: Setup Typst
+        uses: svenstaro/setup-typst@v1
+      # -----------------------
+
       - name: Build GDS
         uses: TinyTapeout/tt-gds-action@tt08
         with:
