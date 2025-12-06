@@ -247,9 +247,7 @@ module tt_um_microgreen_bnn (
     reg [1:0] output_activations;
     reg bnn_ready;
     reg inference_trigger;
-    
-    // Trigger inference when new frame is ready
-    reg frame_ready_prev;
+
     always @(posedge clk) begin
         frame_ready_prev <= frame_ready;
         inference_trigger <= frame_ready && !frame_ready_prev;
