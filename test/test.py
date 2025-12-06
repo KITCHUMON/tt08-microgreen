@@ -16,25 +16,27 @@ async def test_project(dut):
 
     # Reset
     dut._log.info("Reset")
-    dut.ena.value = 1
+    dut.ena.value = 0
+    dut.rst_n.value = 0
     dut.ui_in.value = 0
     dut.uio_in.value = 0
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 10)
-    dut.rst_n.value = 1
-
-    dut._log.info("Test project behavior")
-
-    # Wait some cycles to let signals settle
     await ClockCycles(dut.clk, 5)
 
+    dut.ena.value = 1
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 10)  # Give time for logic to drive uio_out
+
     # Ensure uio_out is driven and doesn't contain 'z'
-    for _ in range(10):
-        if 'z' not in dut.uio_out.value.binstr.lower():
+    # Wait for uio_out to stabilize or timeout
+    for _ in range(20):
+        binstr = dut.uio_out.value.binstr.lower()
+        if 'z' not in binstr and 'x' not in binstr:
             break
         await RisingEdge(dut.clk)
     else:
-        raise AssertionError("uio_out signal contains unresolved 'z' bits")
+        dut._log.warning(f"uio_out unresolved: {dut.uio_out.value.binstr}")
+        raise AssertionError("uio_out signal contains unresolved 'z' or 'x' bits")
+
 
     # Now safe to read uio_out
     dut._log.info("Test 1: Camera Clock (XCLK) Generation")
