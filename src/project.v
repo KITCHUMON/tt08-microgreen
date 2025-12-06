@@ -321,9 +321,10 @@ module tt_um_microgreen_bnn (
     
     // ========================================
     // OUTPUT MAPPING
-    // ========================================
-    assign uo_out[7] = bnn_ready & prediction;   // Buzzer
-    assign uo_out[6] = bnn_ready & prediction;   // LED
+    // ======================================== 
+    wire buzzer = bnn_ready & prediction;
+    assign uo_out[7] = buzzer;
+    assign uo_out[6] = buzzer;
     assign uo_out[5] = bnn_ready;                // Ready flag
     assign uo_out[4] = prediction;               // Raw prediction
     assign uo_out[3:0] = hidden_activations;     // Debug
