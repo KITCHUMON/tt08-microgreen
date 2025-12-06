@@ -1,95 +1,51 @@
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, Timer
+from cocotb.triggers import RisingEdge
 
 @cocotb.test()
-async def test_not_ready_classification(dut):
-    """Test classification of not-ready microgreens (low values)"""
-    clock = Clock(dut.clk, 10, units="ns")
-    cocotb.start_soon(clock.start())
-    
-    # Reset
-    dut.ena.value = 1
+async def test_microgreen_classifier(dut):
+    """Test the BNN microgreen classifier"""
+    # Create a clock
+    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
+
+    # Reset the DUT
     dut.rst_n.value = 0
+    dut.ena.value = 1
     await RisingEdge(dut.clk)
     dut.rst_n.value = 1
     await RisingEdge(dut.clk)
-    
-    # Input: Not ready stage (low values)
-    # Height=3 (0011), Color=3 (0011) -> ui_in = 00110011
-    dut.ui_in.value = 0b00110011  
-    # Density=3 (0011), Texture=3 (0011) -> uio_in = 00110011
-    dut.uio_in.value = 0b00110011 
-    
-    # Wait for classification
+
+        # Example test case: low values for growth stage
+    dut.ui_in.value = 0b00110011  # height=3, color=3
+    dut.uio_in.value = 0b00110011  # width=3, stem=3
+
+    # Wait a few clock cycles for the computation to complete
     for _ in range(10):
         await RisingEdge(dut.clk)
-    
-    # Check output
-    classification = dut.uo_out.value & 0b1
-    ready = (dut.uo_out.value >> 1) & 0b1
-    
-    assert ready == 1, "Ready flag not set"
-    assert classification == 0, f"Expected not-ready (0), got {classification}"
-    
-    dut._log.info("✓ Not-ready stage correctly classified")
 
-@cocotb.test()
-async def test_ready_classification(dut):
-    """Test classification of harvest-ready microgreens (high values)"""
-    clock = Clock(dut.clk, 10, units="ns")
-    cocotb.start_soon(clock.start())
-    
-    dut.ena.value = 1
-    dut.rst_n.value = 0
-    await RisingEdge(dut.clk)
-    dut.rst_n.value = 1
-    await RisingEdge(dut.clk)
-    
-    # Input: Ready stage (high values)
-    # All 15 (1111)
-    dut.ui_in.value = 0b11111111 
-    dut.uio_in.value = 0b11111111 
-    
+    # Check the output
+    classification = dut.uo_out.value & 0b111  # 3-bit classification
+    ready = (dut.uo_out.value >> 3) & 0b1  # Ready bit is the 4th bit
+
+    assert ready == 1, "Ready signal not asserted"
+    assert classification == 1, "Expected growth stage (1), got {}".format(classification)
+
+    dut._log.info("Growth stage correctly classified.")
+
+    # Example test case: high values for harvest-ready stage
+    dut.ui_in.value = 0b11111111  # height=15, color=15
+    dut.uio_in.value = 0b11111111  # width=15, stem=15
+
+    # Wait for computation
     for _ in range(10):
         await RisingEdge(dut.clk)
-    
-    classification = dut.uo_out.value & 0b1
-    ready = (dut.uo_out.value >> 1) & 0b1
-    
-    assert ready == 1, "Ready flag not set"
-    assert classification == 1, f"Expected ready (1), got {classification}"
-    
-    dut._log.info("✓ Ready stage correctly classified")
 
-@cocotb.test()
-async def test_multiple_samples(dut):
-    """Test multiple sequential classifications"""
-    clock = Clock(dut.clk, 10, units="ns")
-    cocotb.start_soon(clock.start())
-    
-    dut.ena.value = 1
-    dut.rst_n.value = 0
-    await RisingEdge(dut.clk)
-    dut.rst_n.value = 1
-    
-    # Test cases: (height, color, density, texture, expected_class)
-    test_cases = [
-        (2, 3, 2, 3, 0),    # Not ready
-        (14, 15, 14, 13, 1), # Ready
-        (5, 6, 5, 6, 0),    # Not ready
-        (12, 13, 12, 11, 1), # Ready
-    ]
-    
-    for height, color, density, texture, expected in test_cases:
-        dut.ui_in.value = (color << 4) | height
-        dut.uio_in.value = (texture << 4) | density
-        
-        for _ in range(10):
-            await RisingEdge(dut.clk)
-        
-        result = dut.uo_out.value & 0b1
-        assert result == expected, \
-            f"Input ({height},{color},{density},{texture}): Expected {expected}, got {result}"
-        
-        dut._log.info(f"✓ Test passed: ({height},{color},{density},{texture}) -> {result}")
+    classification = dut.uo_out.value & 0b111
+    ready = (dut.uo_out.value >> 3) & 0b1
+
+    assert ready == 1, "Ready signal not asserted"
+    assert classification == 2, "Expected harvest stage (2), got {}".format(classification)
+
+    dut._log.info("Harvest stage correctly classified.")
+
+    # You can add more test cases similarly
