@@ -45,7 +45,9 @@ module tt_um_microgreen_bnn (
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
             camera_clk_div <= 0;
-        else if (ena)
+        else 
+            frame_ready_prev <= frame_ready;
+            inference_trigger <= frame_ready && !frame_ready_prev;
             camera_clk_div <= ~camera_clk_div;
     end
     assign uio_out[4] = camera_clk_div;  // XCLK output to camera
@@ -334,9 +336,6 @@ module tt_um_microgreen_bnn (
     assign uo_out[4] = prediction;               // Raw prediction
     assign uo_out[3:0] = hidden_activations;     // Debug
     
-    // Unused outputs
-    assign uio_out[3:2] = 2'b00;  // Reserved for I2C
-    assign uio_out[7:5] = 3'b000;
-    assign uio_out[0] = 1'b0;
+    wire _unused = &{ena, uio_out[7:5], uio_out[3:0], 1'b0};
 
 endmodule
