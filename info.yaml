@@ -1,12 +1,15 @@
+# TinyTapeout project information
+yaml_version: '0.2.2'  # ← THIS WAS MISSING!
+
 project:
   title: "AI Microgreen Growth Stage Classifier"
-  author: "Your Name Here"  # <-- PUT YOUR NAME
+  author: "Your Name Here"  # ← PUT YOUR NAME
   description: "Binarized Neural Network for precision agriculture - detects microgreen maturity with 86.7% accuracy"
   language: "Verilog"
   clock_hz: 50000000
 
 documentation:
-  author: "Your Name"  # <-- PUT YOUR NAME
+  author: "Your Name"  # ← PUT YOUR NAME
   title: "Microgreen BNN Classifier for VLSID 2026"
   description: |
     This project implements a Binarized Neural Network (BNN) on TinyTapeout 
@@ -15,7 +18,7 @@ documentation:
     Model Performance:
     - Training accuracy: 89.4%
     - Test accuracy: 86.7%
-    - Dataset: 123 real images + 1000 synthetic samples
+    - Dataset: 123 real images (87 not-ready, 36 ready) + 1000 synthetic samples
     
     Architecture:
     - Input: 4 features (height, color, density, texture)
@@ -42,12 +45,19 @@ documentation:
     - uio_in[7:4]: Texture/temperature (0-15)
     
     Read classification from output:
-    - uo_out[0]: Result (0=growing, 1=ready to harvest)
+    - uo_out[0]: Result (0=not ready, 1=ready to harvest)
     - uo_out[1]: Ready flag (1=new result available)
     
     Test vectors:
     - Low values (3,3,3,3) → Should output 0 (not ready)
     - High values (15,15,15,15) → Should output 1 (ready)
+  
+  external_hw: |
+    For complete system:
+    - 4x analog sensors (height, color, density, temperature)
+    - External ADC (MCP3008 or similar)
+    - Microcontroller for sensor interfacing (optional)
+    - Display module (LCD or LEDs)
 
 pinout:
   ui[0]: "Height sensor bit 0"
