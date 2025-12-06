@@ -31,7 +31,6 @@ module tt_um_microgreen_bnn (
     //   uio_in[0]     = ECHO (input)
     
     assign uio_oe = 8'b00011110;  // [4:1] outputs, [7:5,0] inputs
-    assign ena = 1'b1;
     // ========================================
     // CAMERA CLOCK GENERATION
     // ========================================
