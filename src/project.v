@@ -18,38 +18,20 @@ module tt_um_microgreen_bnn (
     // ========================================
     // I/O CONFIGURATION
     // ========================================
-    // Camera interface (OV7670):
-    //   ui_in[7:0]    = D[7:0] data bus (input)
-    //   uio_in[7]     = VSYNC (input)
-    //   uio_in[6]     = HREF (input)
-    //   uio_in[5]     = PCLK (input)
-    //   uio_out[4]    = XCLK (output - camera clock)
-    //   uio_out[3:2]  = Reserved for I2C (future)
-    //
-    // Ultrasonic interface (HC-SR04):
-    //   uio_out[1]    = TRIGGER (output)
-    //   uio_in[0]     = ECHO (input)
-    
     assign uio_oe = 8'b00011110;  // [4:1] outputs, [7:5,0] inputs
+    
     // ========================================
     // CAMERA CLOCK GENERATION
     // ========================================
     // Generate XCLK for camera (12.5MHz from 25MHz system clock)
     reg camera_clk_div;
-    reg frame_ready_prev;
+    
     always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        camera_clk_div <= 0;
-        frame_ready_prev <= 0;
-        inference_trigger <= 0;
-    end else begin
-        frame_ready_prev <= frame_ready;
-        inference_trigger <= frame_ready && !frame_ready_prev;
-        camera_clk_div <= ~camera_clk_div;
-        end
+        if (!rst_n)
+            camera_clk_div <= 0;
+        else if (ena)
+            camera_clk_div <= ~camera_clk_div;
     end
-
-    assign uio_out[4] = camera_clk_div;  // XCLK output to camera
     
     // ========================================
     // CAMERA INTERFACE
@@ -59,19 +41,12 @@ module tt_um_microgreen_bnn (
     wire href = uio_in[6];   // Line valid
     wire pclk = uio_in[5];   // Pixel clock
     
-    // Image processing state machine
-    reg [2:0] cam_state;
-    localparam CAM_IDLE = 3'd0;
-    localparam CAM_CAPTURE = 3'd1;
-    localparam CAM_PROCESS = 3'd2;
-    localparam CAM_DONE = 3'd3;
-    
     // Feature accumulators for real-time processing
     reg [15:0] green_accumulator;
     reg [15:0] red_accumulator;
     reg [15:0] brightness_accumulator;
     reg [15:0] pixel_count;
-    reg [7:0] max_row, min_row;  // For height estimation
+    reg [7:0] max_row, min_row;
     reg frame_ready;
     
     // Extracted features (averaged over frame)
@@ -128,9 +103,7 @@ module tt_um_microgreen_bnn (
             if (href) begin
                 col_counter <= col_counter + 1;
                 
-                // Extract RGB from pixel data
-                // Assuming RGB565 format: RRRRR GGGGGG BBBBB
-                // Capture on even pixels (full pixel available)
+                // Extract RGB from pixel data (RGB565 format)
                 if (col_counter[0] == 0) begin
                     // First byte has R[4:0] G[5:3]
                     red_accumulator <= red_accumulator + {camera_data[7:3], 3'b0};
@@ -142,7 +115,7 @@ module tt_um_microgreen_bnn (
                     pixel_count <= pixel_count + 1;
                     
                     // Detect green pixels for height estimation
-                    if (camera_data[7:5] > 3'b100) begin  // Green dominant
+                    if (camera_data[7:5] > 3'b100) begin
                         if (row_counter < min_row) min_row <= row_counter[7:0];
                         if (row_counter > max_row) max_row <= row_counter[7:0];
                     end
@@ -151,7 +124,6 @@ module tt_um_microgreen_bnn (
             
             // End of frame
             if (vsync_falling) begin
-                // Calculate averages
                 if (pixel_count > 0) begin
                     avg_green <= green_accumulator[15:8];
                     avg_red <= red_accumulator[15:8];
@@ -176,7 +148,6 @@ module tt_um_microgreen_bnn (
     localparam TRIGGER_PERIOD = 20'd1500000;  // 60ms @ 25MHz
     localparam TRIGGER_WIDTH = 16'd250;       // 10us @ 25MHz
     
-    assign uio_out[1] = ultrasonic_trigger;
     wire echo_pin = uio_in[0];
     
     always @(posedge clk or negedge rst_n) begin
@@ -205,8 +176,6 @@ module tt_um_microgreen_bnn (
                 if (echo_pin) begin
                     echo_timer <= echo_timer + 1;
                 end else begin
-                    // Distance (cm) = (echo_time * 25MHz) / (58 * 25)
-                    // Simplified: echo_timer / 1450 ≈ echo_timer >> 10
                     distance_cm <= echo_timer[15:10];
                     measuring <= 0;
                 end
@@ -217,17 +186,12 @@ module tt_um_microgreen_bnn (
     // ========================================
     // FEATURE EXTRACTION & PREPROCESSING
     // ========================================
-    // Compute features from camera and ultrasonic data
-    wire [3:0] feature_greenness = avg_green[7:4];  // Top 4 bits
+    wire [3:0] feature_greenness = avg_green[7:4];
     wire [3:0] feature_color_ratio = (avg_green[7:4] > avg_red[7:4]) ? 
                                       (avg_green[7:4] - avg_red[7:4]) : 4'd0;
-    wire [3:0] feature_height = height_pixels[7:4];  // Pixel height
-    wire [3:0] feature_distance = distance_cm[7:4];  // Physical height
-    
-    // Combine camera height and ultrasonic height
+    wire [3:0] feature_height = height_pixels[7:4];
+    wire [3:0] feature_distance = distance_cm[7:4];
     wire [3:0] feature_combined_height = (feature_height + feature_distance) >> 1;
-    
-    // Texture estimate from brightness variance (simplified)
     wire [3:0] feature_texture = avg_brightness[7:4];
     
     // Binarize features
@@ -250,11 +214,16 @@ module tt_um_microgreen_bnn (
     reg [3:0] hidden_activations;
     reg [1:0] output_activations;
     reg bnn_ready;
-    reg inference_trigger;
-
-    always @(posedge clk) begin
-        frame_ready_prev <= frame_ready;
-        inference_trigger <= frame_ready && !frame_ready_prev;
+    
+    // Trigger inference on frame ready
+    reg frame_ready_prev;
+    wire inference_trigger = frame_ready && !frame_ready_prev;
+    
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            frame_ready_prev <= 0;
+        else if (ena)
+            frame_ready_prev <= frame_ready;
     end
     
     // Hidden layer computations
@@ -289,8 +258,6 @@ module tt_um_microgreen_bnn (
             hidden_activations <= 4'b0;
             output_activations <= 2'b0;
             bnn_ready <= 1'b0;
-            inference_trigger <= 1'b0;     // 🔁 ADD THIS
-            frame_ready_prev <= 1'b0;      // 🔁 ADD THIS
         end else if (ena) begin
             case (bnn_state)
                 BNN_IDLE: begin
@@ -317,7 +284,6 @@ module tt_um_microgreen_bnn (
                 
                 BNN_DONE: begin
                     bnn_ready <= 1'b1;
-                    // Wait for next frame
                     if (inference_trigger)
                         bnn_state <= BNN_COMPUTE_HIDDEN;
                 end
@@ -327,14 +293,20 @@ module tt_um_microgreen_bnn (
     
     // ========================================
     // OUTPUT MAPPING
-    // ======================================== 
-    wire buzzer = bnn_ready & prediction & (~vsync);
-    assign uo_out[7] = buzzer;
-    assign uo_out[6] = buzzer;
-    assign uo_out[5] = bnn_ready;                // Ready flag
-    assign uo_out[4] = prediction;               // Raw prediction
-    assign uo_out[3:0] = hidden_activations;     // Debug
+    // ========================================
+    wire buzzer = bnn_ready & prediction;
     
-    wire _unused = &{ena, uio_out[7:5], uio_out[3:0], 1'b0};
+    assign uo_out[7] = buzzer;               // Buzzer
+    assign uo_out[6] = buzzer;               // LED
+    assign uo_out[5] = bnn_ready;            // Ready flag
+    assign uo_out[4] = prediction;           // Raw prediction
+    assign uo_out[3:0] = hidden_activations; // Debug
+    
+    // Assign all uio_out bits to prevent 'z' values
+    assign uio_out[7:5] = 3'b000;           // Unused inputs
+    assign uio_out[4] = camera_clk_div;     // XCLK to camera
+    assign uio_out[3:2] = 2'b00;            // Reserved (future I2C)
+    assign uio_out[1] = ultrasonic_trigger; // Ultrasonic trigger
+    assign uio_out[0] = 1'b0;               // Unused (echo is input)
 
 endmodule
