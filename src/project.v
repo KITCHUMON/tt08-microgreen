@@ -37,11 +37,6 @@ module tt_um_microgreen_bnn (
     // Generate XCLK for camera (12.5MHz from 25MHz system clock)
     reg camera_clk_div;
     reg frame_ready_prev;
-    always @(posedge clk) begin
-        frame_ready_prev <= frame_ready;
-        inference_trigger <= frame_ready && !frame_ready_prev;
-    end
-
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
             camera_clk_div <= 0;
