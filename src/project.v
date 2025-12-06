@@ -38,13 +38,17 @@ module tt_um_microgreen_bnn (
     reg camera_clk_div;
     reg frame_ready_prev;
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n)
-            camera_clk_div <= 0;
-        else 
-            frame_ready_prev <= frame_ready;
-            inference_trigger <= frame_ready && !frame_ready_prev;
-            camera_clk_div <= ~camera_clk_div;
+    if (!rst_n) begin
+        camera_clk_div <= 0;
+        frame_ready_prev <= 0;
+        inference_trigger <= 0;
+    end else begin
+        frame_ready_prev <= frame_ready;
+        inference_trigger <= frame_ready && !frame_ready_prev;
+        camera_clk_div <= ~camera_clk_div;
+        end
     end
+
     assign uio_out[4] = camera_clk_div;  // XCLK output to camera
     
     // ========================================
@@ -285,6 +289,8 @@ module tt_um_microgreen_bnn (
             hidden_activations <= 4'b0;
             output_activations <= 2'b0;
             bnn_ready <= 1'b0;
+            inference_trigger <= 1'b0;     // 🔁 ADD THIS
+            frame_ready_prev <= 1'b0;      // 🔁 ADD THIS
         end else if (ena) begin
             case (bnn_state)
                 BNN_IDLE: begin
