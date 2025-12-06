@@ -63,7 +63,8 @@ module tt_um_microgreen_bnn (
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state <= IDLE;
-            hidden_act <= 0;
+            hidden_act <= 4'b0000;
+            output_class <= 3'b000;
         end else if (ena) begin
             case (state)
                 IDLE: state <= LOAD_INPUT;
