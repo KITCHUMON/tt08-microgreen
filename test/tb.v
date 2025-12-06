@@ -13,7 +13,7 @@ module tb;
     tt_um_microgreen_bnn dut (
         .clk(clk),
         .rst_n(rst_n),
-        .ena(1'b1),
+        .ena(ena),
         .ui_in(ui_in),
         .uio_in(uio_in),
         .uo_out(uo_out),
