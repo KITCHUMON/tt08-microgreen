@@ -8,7 +8,7 @@ module tb;
     wire [7:0] uo_out;
     wire [7:0] uio_out;
     wire [7:0] uio_oe;
-
+    
     // Instantiate DUT
     tt_um_microgreen_bnn dut (
         .clk(clk),
