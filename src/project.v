@@ -23,7 +23,6 @@ module tt_um_microgreen_bnn (
     // ========================================
     // CAMERA CLOCK GENERATION
     // ========================================
-    // Generate XCLK for camera (12.5MHz from 25MHz system clock)
     reg camera_clk_div;
     
     always @(posedge clk or negedge rst_n) begin
@@ -37,11 +36,11 @@ module tt_um_microgreen_bnn (
     // CAMERA INTERFACE
     // ========================================
     wire [7:0] camera_data = ui_in;
-    wire vsync = uio_in[7];  // Frame start
-    wire href = uio_in[6];   // Line valid
-    wire pclk = uio_in[5];   // Pixel clock (from camera)
+    wire vsync = uio_in[7];
+    wire href = uio_in[6];
+    wire pclk = uio_in[5];
     
-    // Feature accumulators for real-time processing
+    // Feature accumulators
     reg [15:0] green_accumulator;
     reg [15:0] red_accumulator;
     reg [15:0] brightness_accumulator;
@@ -49,13 +48,13 @@ module tt_um_microgreen_bnn (
     reg [7:0] max_row, min_row;
     reg frame_ready;
     
-    // Extracted features (averaged over frame)
+    // Extracted features
     reg [7:0] avg_green;
     reg [7:0] avg_red;
     reg [7:0] avg_brightness;
     reg [7:0] height_pixels;
     
-    // Synchronize VSYNC to system clock for reliable edge detection
+    // Synchronize VSYNC to system clock
     reg vsync_sync1, vsync_sync2, vsync_sync3;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -69,18 +68,19 @@ module tt_um_microgreen_bnn (
         end
     end
     
-    wire vsync_rising = vsync_sync2 && !vsync_sync3;
     wire vsync_falling = !vsync_sync2 && vsync_sync3;
     
-    // Process incoming pixels on PCLK (if available) or system clock
-    reg vsync_prev_pclk, href_prev;
-    wire pclk_active = pclk;  // Use pclk when available
-    wire process_clk = pclk_active ? pclk : clk;  // Fallback to clk for testing
-    
+    // Process incoming pixels
+    reg vsync_prev, href_prev;
     reg [8:0] row_counter;
     reg [9:0] col_counter;
     
-    always @(posedge process_clk or negedge rst_n) begin
+    // Edge detection signals (declared outside always block)
+    wire vsync_rising_edge = vsync && !vsync_prev;
+    wire vsync_falling_edge = !vsync && vsync_prev;
+    wire href_active_edge = href && !href_prev;
+    
+    always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             green_accumulator <= 0;
             red_accumulator <= 0;
@@ -90,18 +90,14 @@ module tt_um_microgreen_bnn (
             col_counter <= 0;
             max_row <= 0;
             min_row <= 255;
-            vsync_prev_pclk <= 0;
+            vsync_prev <= 0;
             href_prev <= 0;
         end else if (ena) begin
-            vsync_prev_pclk <= vsync;
+            vsync_prev <= vsync;
             href_prev <= href;
             
-            wire vsync_rising_pclk = vsync && !vsync_prev_pclk;
-            wire vsync_falling_pclk = !vsync && vsync_prev_pclk;
-            wire href_active = href && !href_prev;
-            
             // Start of new frame
-            if (vsync_rising_pclk) begin
+            if (vsync_rising_edge) begin
                 green_accumulator <= 0;
                 red_accumulator <= 0;
                 brightness_accumulator <= 0;
@@ -112,7 +108,7 @@ module tt_um_microgreen_bnn (
             end
             
             // New line
-            if (href_active) begin
+            if (href_active_edge) begin
                 row_counter <= row_counter + 1;
                 col_counter <= 0;
             end
@@ -121,18 +117,16 @@ module tt_um_microgreen_bnn (
             if (href) begin
                 col_counter <= col_counter + 1;
                 
-                // Extract RGB from pixel data (RGB565 format)
+                // Extract RGB from RGB565 format
                 if (col_counter[0] == 0) begin
-                    // First byte has R[4:0] G[5:3]
                     red_accumulator <= red_accumulator + {camera_data[7:3], 3'b0};
                     green_accumulator <= green_accumulator + {camera_data[2:0], 5'b0};
                 end else begin
-                    // Second byte has G[2:0] B[4:0]
                     green_accumulator <= green_accumulator + {camera_data[7:5], 5'b0};
                     brightness_accumulator <= brightness_accumulator + camera_data;
                     pixel_count <= pixel_count + 1;
                     
-                    // Detect green pixels for height estimation
+                    // Detect green pixels for height
                     if (camera_data[7:5] > 3'b100) begin
                         if (row_counter < min_row) min_row <= row_counter[7:0];
                         if (row_counter > max_row) max_row <= row_counter[7:0];
@@ -140,8 +134,8 @@ module tt_um_microgreen_bnn (
                 end
             end
             
-            // End of frame - compute features
-            if (vsync_falling_pclk) begin
+            // End of frame
+            if (vsync_falling_edge) begin
                 if (pixel_count > 0) begin
                     avg_green <= green_accumulator[15:8];
                     avg_red <= red_accumulator[15:8];
@@ -152,15 +146,13 @@ module tt_um_microgreen_bnn (
         end
     end
     
-    // Frame ready signal generation (in system clock domain)
+    // Frame ready signal
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
             frame_ready <= 0;
         else if (ena) begin
-            // Set frame_ready on VSYNC falling edge
             if (vsync_falling)
                 frame_ready <= 1;
-            // Clear after inference trigger
             else if (frame_ready)
                 frame_ready <= 0;
         end
@@ -175,9 +167,8 @@ module tt_um_microgreen_bnn (
     reg measuring;
     reg [19:0] trigger_counter;
     
-    // Generate trigger pulse (10us every 60ms)
-    localparam TRIGGER_PERIOD = 20'd1500000;  // 60ms @ 25MHz
-    localparam TRIGGER_WIDTH = 16'd250;       // 10us @ 25MHz
+    localparam TRIGGER_PERIOD = 20'd1500000;
+    localparam TRIGGER_WIDTH = 16'd250;
     
     wire echo_pin = uio_in[0];
     
@@ -199,7 +190,6 @@ module tt_um_microgreen_bnn (
             if (trigger_counter >= TRIGGER_PERIOD)
                 trigger_counter <= 0;
             
-            // Echo measurement
             if (echo_pin && !measuring) begin
                 measuring <= 1;
                 echo_timer <= 0;
@@ -327,17 +317,16 @@ module tt_um_microgreen_bnn (
     // ========================================
     wire buzzer = bnn_ready & prediction;
     
-    assign uo_out[7] = buzzer;               // Buzzer
-    assign uo_out[6] = buzzer;               // LED
-    assign uo_out[5] = bnn_ready;            // Ready flag
-    assign uo_out[4] = prediction;           // Raw prediction
-    assign uo_out[3:0] = hidden_activations; // Debug
+    assign uo_out[7] = buzzer;
+    assign uo_out[6] = buzzer;
+    assign uo_out[5] = bnn_ready;
+    assign uo_out[4] = prediction;
+    assign uo_out[3:0] = hidden_activations;
     
-    // Assign all uio_out bits to prevent 'z' values
-    assign uio_out[7:5] = 3'b000;           // Unused inputs
-    assign uio_out[4] = camera_clk_div;     // XCLK to camera
-    assign uio_out[3:2] = 2'b00;            // Reserved (future I2C)
-    assign uio_out[1] = ultrasonic_trigger; // Ultrasonic trigger
-    assign uio_out[0] = 1'b0;               // Unused (echo is input)
+    assign uio_out[7:5] = 3'b000;
+    assign uio_out[4] = camera_clk_div;
+    assign uio_out[3:2] = 2'b00;
+    assign uio_out[1] = ultrasonic_trigger;
+    assign uio_out[0] = 1'b0;
 
 endmodule
