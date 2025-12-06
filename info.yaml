@@ -1,5 +1,5 @@
 # TinyTapeout project information
-yaml_version: '0.2.2'  # ← THIS WAS MISSING!
+yaml_version: '6'  # ← THIS WAS MISSING!
 
 project:
   title: "AI Microgreen Growth Stage Classifier"
