@@ -38,7 +38,7 @@ module tt_um_microgreen_bnn (
     wire signed [4:0] output_sum [0:2];
     assign output_sum[0] = xnor_popcount(hidden_act, W_HO_0);
     assign output_sum[1] = xnor_popcount(hidden_act, W_HO_1);
-    assign output_sum[2] = xnor_popcount(hidden_act, W_HO_2);
+
     
     function [4:0] xnor_popcount;
         input [3:0] a;
@@ -84,9 +84,9 @@ module tt_um_microgreen_bnn (
                 end
                 COMPUTE_OUTPUT: begin
                     // Find argmax of output_sum for 3 classes
-                    if (output_sum[0] >= output_sum[1] && output_sum[0] >= output_sum[2])
+                    if (output_sum[0] >= output_sum[1])
                         output_class <= 3'd0;
-                    else if (output_sum[1] >= output_sum[0] && output_sum[1] >= output_sum[2])
+                    else if (output_sum[1] >= output_sum[0])
                         output_class <= 3'd1;
                     else
                         output_class <= 3'd2;
