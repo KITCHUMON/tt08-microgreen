@@ -14,7 +14,7 @@ module tt_um_microgreen_bnn (
     input  wire       clk,      // Clock (25MHz for camera)
     input  wire       rst_n     // Reset (active low)
 );
-
+    
     // ========================================
     // I/O CONFIGURATION
     // ========================================
