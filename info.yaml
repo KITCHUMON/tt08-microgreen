@@ -3,7 +3,7 @@
 
 project:
   title: "Microgreen Harvest Classifier - Camera+BNN"
-  author: "Your Name"                    # CHANGE THIS
+  author: "Athul"                    # CHANGE THIS
   description: "Direct OV7670 camera to ASIC with on-chip BNN inference for microgreen harvest detection"
   discord: "your_discord_handle"         # CHANGE THIS (optional)
   language: "Verilog"
@@ -43,7 +43,7 @@ pinout:
   uio[6]: "href"
   uio[5]: "pclk"
   uio[4]: "camera_clk_div"
-  uio[3]: ""
+  uio[3]: "uart_alert"
   uio[2]: ""
   uio[1]: "ultrasonic_trigger"
   uio[0]: "echo_pin"
