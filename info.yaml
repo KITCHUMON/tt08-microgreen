@@ -43,7 +43,7 @@ pinout:
   uio[6]: "href"
   uio[5]: "pclk"
   uio[4]: "camera_clk_div"
-  uio[3]: "uart_alert"
+  uio[3]: "uart_rx"
   uio[2]: ""
   uio[1]: "ultrasonic_trigger"
   uio[0]: "echo_pin"
